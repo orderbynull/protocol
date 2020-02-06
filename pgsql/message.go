@@ -1,8 +1,12 @@
 package pgsql
 
 import (
+	"bytes"
 	"encoding/binary"
+	"errors"
 )
+
+var errAssembleFailure = errors.New("pgsql: cannot assemble packet")
 
 type protocol struct {
 	major, minor byte
@@ -17,13 +21,49 @@ type StartupMessage struct {
 	protocol
 }
 
-// IsCancelRequest возвращает true если пакет является CancelRequest.
+type Packet struct {
+	payload    bytes.Buffer
+	assembling bool
+}
+
+func (p *Packet) appendPayload(b []byte) {
+	p.payload.Write(b)
+}
+
+// AssemblePacket ...
+func (p *Packet) AssemblePacket(b []byte) bool {
+	if len(b) == 1 {
+		p.appendPayload(b)
+		return true
+	}
+	if p.assembling {
+		p.appendPayload(b)
+		if p.isValidPacket() {
+			return true
+		}
+	} else {
+		if p.isValidPacket() {
+			return true
+		}
+		p.assembling = true
+		p.appendPayload(b)
+	}
+
+	return false
+}
+
+func (p *Packet) Decoded() interface{} {
+	return nil
+}
+
+// isCancelRequest возвращает true если пакет является CancelRequest.
 // CancelRequest не содержит тип пакета в заголовке.
 // Первые 4 байта содержат длину пакета, которая всегда равна 16.
 // Вторые 4 байта содержат код пакета, который всегда равен 80877102.
 // Остальные 8 байт не представляют интереса для валидации пакета.
 // Источник сообщения - клиент.
-func IsCancelRequest(data []byte) bool {
+func (p *Packet) isCancelRequest() bool {
+	data := p.payload.Bytes()
 	if len(data) != 16 {
 		return false
 	}
@@ -35,12 +75,13 @@ func IsCancelRequest(data []byte) bool {
 	return requestCode == 80877102
 }
 
-// IsSSLRequest возвращает true если пакет является SSLRequest.
+// isSSLRequest возвращает true если пакет является SSLRequest.
 // SSLRequest не содержит тип пакета в заголовке.
 // Первые 4 байта содержат длину пакета, которая всегда равна 8.
 // Вторые 4 байта содержат код пакета, который всегда равен 80877103.
 // Источник сообщения - клиент.
-func IsSSLRequest(data []byte) bool {
+func (p *Packet) isSSLRequest() bool {
+	data := p.payload.Bytes()
 	if len(data) != 8 {
 		return false
 	}
@@ -52,12 +93,13 @@ func IsSSLRequest(data []byte) bool {
 	return requestCode == 80877103
 }
 
-// IsStartupMessage возвращает true если пакет является StartupMessage.
+// isStartupMessage возвращает true если пакет является StartupMessage.
 // StartupMessage не содержит тип пакета в заголовке.
 // Первые 4 байта содержат длину пакета.
 // Вторые 4 байта содержат версию протокола, которая всегда равна 196608.
 // Источник сообщения - клиент.
-func IsStartupMessage(data []byte) bool {
+func (p *Packet) isStartupMessage() bool {
+	data := p.payload.Bytes()
 	if len(data) < 8 {
 		return false
 	}
@@ -69,14 +111,19 @@ func IsStartupMessage(data []byte) bool {
 	return protoVer == 196608 //v3.0
 }
 
-// IsValidPacket возвращает true если data валидный пакет.
+func (p *Packet) IsNoOpMessage() bool {
+	return len(p.payload.Bytes()) == 1
+}
+
+// isValidPacket возвращает true если data валидный пакет.
 // Учитывается, что data может состоять как из одного пакета, так и из множества пакетов.
 // В последнем случае data валиден если каждый пакет из data валиден.
-func IsValidPacket(data []byte) bool {
+func (p *Packet) isValidPacket() bool {
+	data := p.payload.Bytes()
 	if len(data) < 5 {
 		return false
 	}
-	if IsStartupMessage(data) || IsSSLRequest(data) || IsCancelRequest(data) {
+	if p.isStartupMessage() || p.isSSLRequest() || p.isCancelRequest() {
 		return true
 	}
 
