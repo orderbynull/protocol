@@ -31,8 +31,8 @@ func (p *Packet) appendPayload(b []byte) (*Packet) {
 	return p
 }
 
-// AssemblePacket ...
-func (p *Packet) AssemblePacket(b []byte) bool {
+// Assemble ...
+func (p *Packet) Assemble(b []byte) bool {
 	if len(b) == 1 {
 		p.appendPayload(b)
 		return true
