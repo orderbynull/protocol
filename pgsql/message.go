@@ -26,8 +26,9 @@ type Packet struct {
 	assembling bool
 }
 
-func (p *Packet) appendPayload(b []byte) {
+func (p *Packet) appendPayload(b []byte) (*Packet) {
 	p.payload.Write(b)
+	return p
 }
 
 // AssemblePacket ...
@@ -36,20 +37,7 @@ func (p *Packet) AssemblePacket(b []byte) bool {
 		p.appendPayload(b)
 		return true
 	}
-	if p.assembling {
-		p.appendPayload(b)
-		if p.isValidPacket() {
-			return true
-		}
-	} else {
-		if p.isValidPacket() {
-			return true
-		}
-		p.assembling = true
-		p.appendPayload(b)
-	}
-
-	return false
+	return p.appendPayload(b).isValidPacket()
 }
 
 func (p *Packet) Decoded() interface{} {
