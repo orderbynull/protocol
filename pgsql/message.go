@@ -3,6 +3,7 @@ package pgsql
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 )
 
 type protocol struct {
@@ -63,7 +64,9 @@ func (p *Packet) Messages() []interface{} {
 		packet := p.Payload[offset:offset+pktLen]
 		offset = offset + pktLen
 
+		println(hex.Dump(packet))
 		if isParseMessage(packet) {
+			println("parse msg")
 			messages = append(messages, ParseMessage{string(packet)})
 		}
 	}
