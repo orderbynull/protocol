@@ -60,7 +60,7 @@ func (p *Packet) Messages() []interface{} {
 			break
 		}
 		pktLen := binary.BigEndian.Uint32(p.Payload[offset+1:offset+5]) + 1
-		packet := p.Payload[offset:pktLen]
+		packet := p.Payload[offset:offset+pktLen]
 		offset = offset + pktLen
 		println(hex.Dump(packet))
 	}
