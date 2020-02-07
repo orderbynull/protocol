@@ -112,9 +112,10 @@ func isValidPacket(data []byte) bool {
 		return false
 	}
 
-	//if isNoOpMessage(data) || isStartupMessage(data) || isSSLRequestMessage(data) || isCancelRequestMessage(data) {
-	//	return true
-	//}
+	// Эти типы сообщений в заголовке не содержат байт типа пакета, поэтому их нужно обработать сразу
+	if isStartupMessage(data) || isSSLRequestMessage(data) || isCancelRequestMessage(data) {
+		return true
+	}
 
 	var offset uint32
 	for {
