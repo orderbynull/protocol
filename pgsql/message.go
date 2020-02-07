@@ -50,6 +50,10 @@ type Packet struct {
 }
 
 func (p *Packet) Messages() []interface{} {
+	if isStartupMessage(p.Payload) || isSSLRequestMessage(p.Payload) || isCancelRequestMessage(p.Payload) {
+		return nil
+	}
+
 	var offset uint32
 	for {
 		if len(p.Payload[offset:]) < 5 {
