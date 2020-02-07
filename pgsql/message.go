@@ -3,6 +3,7 @@ package pgsql
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 )
 
 type protocol struct {
@@ -16,6 +17,14 @@ type StartupMessage struct {
 	dateStyle      string
 	clientEncoding string
 	protocol
+}
+
+type SSLRequestMessage struct {
+
+}
+
+type ParseMessage struct {
+	Query string
 }
 
 type PacketBuilder struct {
@@ -41,7 +50,30 @@ type Packet struct {
 }
 
 func (p *Packet) Messages() []interface{} {
+	var offset uint32
+	for {
+		if len(p.Payload[offset:]) < 5 {
+			break
+		}
+		pktLen := binary.BigEndian.Uint32(p.Payload[offset+1:offset+5]) + 1
+		packet := p.Payload[offset:pktLen]
+		offset = offset + pktLen
+		println(hex.Dump(packet))
+	}
+
 	return nil
+}
+
+// isParseMessage возвращает true если пакет является Parse.
+func isParseMessage(data []byte) bool  {
+	if len(data) < 5 {
+		return false
+	}
+	if data[0] != 0x50 {
+		return false
+	}
+	pktLen := binary.BigEndian.Uint32(data[1:5])
+	return pktLen == uint32(len(data))
 }
 
 // isCancelRequest возвращает true если пакет является CancelRequest.
@@ -100,9 +132,9 @@ func isNoOpMessage(data []byte) bool {
 	return len(data) == 1
 }
 
-// isValidPacket возвращает true если p.Payload это валидный пакет.
-// Учитывается, что p.Payload может состоять как из одного пакета, так и из множества пакетов.
-// В последнем случае p.Payload валиден если каждый пакет из data валиден.
+// isValidPacket возвращает true если data это валидный пакет.
+// Учитывается, что data может состоять как из одного пакета, так и из множества пакетов.
+// В последнем случае data валиден если каждый пакет из data валиден.
 func isValidPacket(data []byte) bool {
 	if isNoOpMessage(data) {
 		return true
