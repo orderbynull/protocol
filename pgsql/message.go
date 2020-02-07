@@ -3,7 +3,6 @@ package pgsql
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 )
 
 type protocol struct {
@@ -64,9 +63,9 @@ func (p *Packet) Messages() []interface{} {
 		packet := p.Payload[offset:offset+pktLen]
 		offset = offset + pktLen
 
-		println(hex.Dump(packet))
+		//println(hex.Dump(packet))
 		if isParseMessage(packet) {
-			println("parse msg")
+			//println("parse msg")
 			messages = append(messages, ParseMessage{string(packet)})
 		}
 	}
@@ -82,7 +81,7 @@ func isParseMessage(data []byte) bool  {
 	if data[0] != 0x50 {
 		return false
 	}
-	pktLen := binary.BigEndian.Uint32(data[1:5])
+	pktLen := binary.BigEndian.Uint32(data[1:5]) + 1
 	return pktLen == uint32(len(data))
 }
 
