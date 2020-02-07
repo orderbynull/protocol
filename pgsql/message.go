@@ -37,7 +37,7 @@ func (p *PacketBuilder) Build(b []byte) (*Packet, error) {
 }
 
 type Packet struct {
-	payload    []byte
+	Payload []byte
 }
 
 func (p *Packet) Messages() []interface{} {
@@ -100,9 +100,9 @@ func isNoOpMessage(data []byte) bool {
 	return len(data) == 1
 }
 
-// isValidPacket возвращает true если p.payload это валидный пакет.
-// Учитывается, что p.payload может состоять как из одного пакета, так и из множества пакетов.
-// В последнем случае p.payload валиден если каждый пакет из data валиден.
+// isValidPacket возвращает true если p.Payload это валидный пакет.
+// Учитывается, что p.Payload может состоять как из одного пакета, так и из множества пакетов.
+// В последнем случае p.Payload валиден если каждый пакет из data валиден.
 func isValidPacket(data []byte) bool {
 	if isNoOpMessage(data) {
 		return true
@@ -125,8 +125,8 @@ func isValidPacket(data []byte) bool {
 		}
 		pktLen := binary.BigEndian.Uint32(data[offset+1:offset+5]) + 1
 		// Если ожидаемая длина остатка пакета совпадает с фактической длиной остатка пакета,
-		// то либо payload это всего один пакет и он валидный, либо цикл дошел уже до последнего пакета в payload и
-		// это автоматически значит, что все пакеты в payload так же валидны.
+		// то либо Payload это всего один пакет и он валидный, либо цикл дошел уже до последнего пакета в Payload и
+		// это автоматически значит, что все пакеты в Payload так же валидны.
 		if pktLen == uint32(len(data[offset:])) {
 			return true
 		}
