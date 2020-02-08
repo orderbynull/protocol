@@ -1,9 +1,10 @@
 package protocol
 
-import "bytes"
+import (
+	"bytes"
+)
 
-func ReadNullTerminatedString(data []byte) string {
-	r := bytes.NewReader(data)
+func ReadNullTerminatedString(r *bytes.Reader) string {
 	var str []byte
 	for {
 		b, err := r.ReadByte()

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/proxypass/protocol"
+	"io"
 )
 
 //type protocol struct {
@@ -25,6 +26,18 @@ type SSLRequestMessage struct {
 
 type ParseMessage struct {
 	Query string
+}
+
+func (p *ParseMessage) decode(data []byte)  {
+	r := bytes.NewReader(data)
+
+	// Skip packet header
+	if _, err := r.Seek(5, io.SeekStart); err != nil {
+		return
+	}
+
+	protocol.ReadNullTerminatedString(r)
+	p.Query = protocol.ReadNullTerminatedString(r)
 }
 
 type PacketBuilder struct {
@@ -65,9 +78,9 @@ func (p *Packet) Messages() []interface{} {
 		offset = offset + pktLen
 
 		if isParseMessage(packet) {
-			messages = append(messages, ParseMessage{
-				protocol.ReadNullTerminatedString(packet[5:]),
-			})
+			pm := ParseMessage{}
+			pm.decode(packet)
+			messages = append(messages, pm)
 		}
 	}
 
