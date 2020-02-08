@@ -3,11 +3,12 @@ package pgsql
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/proxypass/protocol"
 )
 
-type protocol struct {
-	major, minor byte
-}
+//type protocol struct {
+//	major, minor byte
+//}
 
 type StartupMessage struct {
 	user           string
@@ -15,7 +16,7 @@ type StartupMessage struct {
 	timeZone       string
 	dateStyle      string
 	clientEncoding string
-	protocol
+	//protocol
 }
 
 type SSLRequestMessage struct {
@@ -63,10 +64,10 @@ func (p *Packet) Messages() []interface{} {
 		packet := p.Payload[offset:offset+pktLen]
 		offset = offset + pktLen
 
-		//println(hex.Dump(packet))
 		if isParseMessage(packet) {
-			//println("parse msg")
-			messages = append(messages, ParseMessage{string(packet)})
+			messages = append(messages, ParseMessage{
+				protocol.ReadNullTerminatedString(packet[5:]),
+			})
 		}
 	}
 
