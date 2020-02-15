@@ -57,6 +57,8 @@ func (e *ErrorMessage) decode(data []byte) {
 		switch b {
 		case fieldMessage:
 			e.Message = protocol.ReadNullTerminatedString(r)
+		default:
+			protocol.SkipNullTerminatedString(r)
 		}
 	}
 }
