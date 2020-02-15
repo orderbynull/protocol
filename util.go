@@ -19,3 +19,7 @@ func ReadNullTerminatedString(r *bytes.Reader) string {
 		}
 	}
 }
+
+func SkipNullTerminatedString(r *bytes.Reader)()  {
+	_ = ReadNullTerminatedString(r)
+}

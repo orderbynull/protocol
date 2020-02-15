@@ -7,22 +7,12 @@ import (
 	"io"
 )
 
-//type protocol struct {
-//	major, minor byte
-//}
-
-type StartupMessage struct {
-	user           string
-	database       string
-	timeZone       string
-	dateStyle      string
-	clientEncoding string
-	//protocol
-}
-
-type SSLRequestMessage struct {
-
-}
+const (
+	fieldSeverity1 = 0x53 //S
+	fieldSeverity2 = 0x56 //V
+	fieldCode = 0x34 //C
+	fieldMessage = 0x4d //M
+)
 
 type ParseMessage struct {
 	Query string
@@ -36,8 +26,43 @@ func (p *ParseMessage) decode(data []byte)  {
 		return
 	}
 
-	protocol.ReadNullTerminatedString(r)
+	protocol.SkipNullTerminatedString(r)
 	p.Query = protocol.ReadNullTerminatedString(r)
+}
+
+func (p *ParseMessage) String() string {
+	return p.Query
+}
+
+type ErrorMessage struct {
+	Message string
+}
+
+func (e *ErrorMessage) decode(data []byte) {
+	r := bytes.NewReader(data)
+
+	// Skip packet header
+	if _, err := r.Seek(5, io.SeekStart); err != nil {
+		return
+	}
+
+	for {
+		b, err := r.ReadByte()
+		if err == io.EOF {
+			return
+		}
+		if err != nil {
+			println(err)
+		}
+		switch b {
+		case fieldMessage:
+			e.Message = protocol.ReadNullTerminatedString(r)
+		}
+	}
+}
+
+func (e *ErrorMessage) String() string {
+	return e.Message
 }
 
 type PacketBuilder struct {
@@ -73,6 +98,7 @@ func (p *Packet) Messages() []interface{} {
 		if len(p.Payload[offset:]) < 5 {
 			break
 		}
+
 		pktLen := binary.BigEndian.Uint32(p.Payload[offset+1:offset+5]) + 1
 		packet := p.Payload[offset:offset+pktLen]
 		offset = offset + pktLen
@@ -81,10 +107,28 @@ func (p *Packet) Messages() []interface{} {
 			pm := ParseMessage{}
 			pm.decode(packet)
 			messages = append(messages, pm)
+			break
+		}
+		if isErrorMessage(packet) {
+			em := ErrorMessage{}
+			em.decode(packet)
+			messages = append(messages, em)
+			break
 		}
 	}
 
 	return messages
+}
+
+func isErrorMessage(data []byte) bool  {
+	if len(data) < 5 {
+		return false
+	}
+	if data[0] != 0x45 {
+		return false
+	}
+	pktLen := binary.BigEndian.Uint32(data[1:5]) + 1
+	return pktLen == uint32(len(data))
 }
 
 // isParseMessage возвращает true если пакет является Parse.
