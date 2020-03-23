@@ -3,7 +3,7 @@ package pgsql
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/proxypass/protocol"
+	"github.com/orderbynull/protocol"
 	"io"
 )
 
