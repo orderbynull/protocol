@@ -10,15 +10,20 @@ import (
 const (
 	fieldSeverity1 = 0x53 //S
 	fieldSeverity2 = 0x56 //V
-	fieldCode = 0x34 //C
-	fieldMessage = 0x4d //M
+	fieldCode      = 0x34 //C
+	fieldMessage   = 0x4d //M
 )
 
+type BaseMessage struct {
+	options map[string]string
+}
+
 type ParseMessage struct {
+	BaseMessage
 	Query string
 }
 
-func (p *ParseMessage) decode(data []byte)  {
+func (p *ParseMessage) decode(data []byte) {
 	r := bytes.NewReader(data)
 
 	// Skip packet header
@@ -35,6 +40,7 @@ func (p *ParseMessage) String() string {
 }
 
 type ErrorMessage struct {
+	BaseMessage
 	Message string
 }
 
@@ -102,7 +108,7 @@ func (p *Packet) Messages() []interface{} {
 		}
 
 		pktLen := binary.BigEndian.Uint32(p.Payload[offset+1:offset+5]) + 1
-		packet := p.Payload[offset:offset+pktLen]
+		packet := p.Payload[offset : offset+pktLen]
 		offset = offset + pktLen
 
 		if isParseMessage(packet) {
@@ -122,7 +128,7 @@ func (p *Packet) Messages() []interface{} {
 	return messages
 }
 
-func isErrorMessage(data []byte) bool  {
+func isErrorMessage(data []byte) bool {
 	if len(data) < 5 {
 		return false
 	}
@@ -134,7 +140,7 @@ func isErrorMessage(data []byte) bool  {
 }
 
 // isParseMessage возвращает true если пакет является Parse.
-func isParseMessage(data []byte) bool  {
+func isParseMessage(data []byte) bool {
 	if len(data) < 5 {
 		return false
 	}
