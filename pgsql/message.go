@@ -15,7 +15,7 @@ const (
 )
 
 type BaseMessage struct {
-	options map[string]string
+	Options map[string]string
 }
 
 type ParseMessage struct {
