@@ -115,14 +115,14 @@ func (p *Packet) Messages() []interface{} {
 			pm := ParseMessage{}
 			pm.decode(packet)
 			messages = append(messages, pm)
-			break
+			continue
 		}
-		if isErrorMessage(packet) {
-			em := ErrorMessage{}
-			em.decode(packet)
-			messages = append(messages, em)
-			break
-		}
+		//if isErrorMessage(packet) {
+		//	em := ErrorMessage{}
+		//	em.decode(packet)
+		//	messages = append(messages, em)
+		//	continue
+		//}
 	}
 
 	return messages
