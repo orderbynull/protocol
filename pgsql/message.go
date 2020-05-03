@@ -78,12 +78,12 @@ type PacketBuilder struct {
 }
 
 // Build ...
-func (p *PacketBuilder) Build(b []byte) (*Packet, error) {
+func (p *PacketBuilder) Build(b []byte, origin byte) (*Packet, error) {
 	if _, err := p.buf.Write(b); err != nil {
 		return nil, err
 	}
 	if isValidPacket(p.buf.Bytes()) {
-		packet := &Packet{p.buf.Bytes()}
+		packet := &Packet{p.buf.Bytes(), origin}
 		p.buf.Reset()
 		return packet, nil
 	}
@@ -93,6 +93,7 @@ func (p *PacketBuilder) Build(b []byte) (*Packet, error) {
 
 type Packet struct {
 	Payload []byte
+	Origin  byte
 }
 
 func (p *Packet) Messages() []interface{} {
@@ -111,18 +112,18 @@ func (p *Packet) Messages() []interface{} {
 		packet := p.Payload[offset : offset+pktLen]
 		offset = offset + pktLen
 
-		if isParseMessage(packet) {
+		if p.Origin == OriginFrontend && isParseMessage(packet) {
 			pm := ParseMessage{}
 			pm.decode(packet)
 			messages = append(messages, pm)
 			continue
 		}
-		//if isErrorMessage(packet) {
-		//	em := ErrorMessage{}
-		//	em.decode(packet)
-		//	messages = append(messages, em)
-		//	continue
-		//}
+		if p.Origin == OriginBackend && isErrorMessage(packet) {
+			em := ErrorMessage{}
+			em.decode(packet)
+			messages = append(messages, em)
+			continue
+		}
 	}
 
 	return messages

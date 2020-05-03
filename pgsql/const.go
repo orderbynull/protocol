@@ -1,6 +1,9 @@
 package pgsql
 
 const (
+	OriginBackend = 0x01
+	OriginFrontend = 0x02
+
 	// Рассылается сервером.
 	// Длина сообщения всегда 8 байт.
 	authenticationOk = 0x52
